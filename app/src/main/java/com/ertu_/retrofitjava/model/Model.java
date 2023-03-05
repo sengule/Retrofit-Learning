@@ -1,13 +1,13 @@
-package com.ertu_.retrofitjava;
+package com.ertu_.retrofitjava.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public class model {
+public class Model {
 
     @SerializedName("currency")
-    String currency;
+    public String currency;
 
     @SerializedName("price")
-    String price;
+    public String price;
 
 }
