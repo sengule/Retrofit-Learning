@@ -11,7 +11,6 @@ public interface CryptoAPI {
     //GET, POST, UPDATE, DELETE
     //https://raw.githubusercontent.com/atilsamancioglu/K21-JSONDataSet/master/crypto.json
 
-
     @GET("atilsamancioglu/K21-JSONDataSet/master/crypto.json")
     Call<List<Model>> getData();
 

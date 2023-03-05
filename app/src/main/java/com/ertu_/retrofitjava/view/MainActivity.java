@@ -1,11 +1,14 @@
 package com.ertu_.retrofitjava.view;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.util.Log;
 
 import com.ertu_.retrofitjava.R;
+import com.ertu_.retrofitjava.adapter.RecycleViewAdapter;
 import com.ertu_.retrofitjava.model.Model;
 import com.ertu_.retrofitjava.service.CryptoAPI;
 import com.google.gson.Gson;
@@ -27,12 +30,17 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Model> cryptoModel;
     Retrofit retrofit;
 
+    RecyclerView recyclerView;
+    RecycleViewAdapter recycleViewAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         //https://raw.githubusercontent.com/atilsamancioglu/K21-JSONDataSet/master/crypto.json
+        recyclerView = findViewById(R.id.recyclerView);
+
 
         Gson gson = new GsonBuilder().setLenient().create();
 
@@ -40,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
                 .baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
+
+        getDataFromApi();
+
 
     }
 
@@ -55,11 +66,9 @@ public class MainActivity extends AppCompatActivity {
                 if(response.isSuccessful()) {
                     List<Model> responseList = response.body();
                     cryptoModel = new ArrayList<>(responseList);
-
-                    for(Model model : cryptoModel) {
-                        Log.d("a", model.currency);
-                    }
-
+                    recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+                    recycleViewAdapter = new RecycleViewAdapter(cryptoModel);
+                    recyclerView.setAdapter(recycleViewAdapter);
                 }
             }
 
