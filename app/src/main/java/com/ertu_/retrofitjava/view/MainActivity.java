@@ -17,10 +17,14 @@ import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
@@ -29,9 +33,10 @@ public class MainActivity extends AppCompatActivity {
 
     ArrayList<Model> cryptoModel;
     Retrofit retrofit;
-
     RecyclerView recyclerView;
     RecycleViewAdapter recycleViewAdapter;
+
+    CompositeDisposable compositeDisposable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,41 +46,39 @@ public class MainActivity extends AppCompatActivity {
         //https://raw.githubusercontent.com/atilsamancioglu/K21-JSONDataSet/master/crypto.json
         recyclerView = findViewById(R.id.recyclerView);
 
-
         Gson gson = new GsonBuilder().setLenient().create();
 
         retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
 
         getDataFromApi();
-
-
     }
 
     private void getDataFromApi() {
-        CryptoAPI cryptoAPI = retrofit.create(CryptoAPI.class);
-        Call<List<Model>> call = cryptoAPI.getData();
+        final CryptoAPI cryptoAPI = retrofit.create(CryptoAPI.class);
 
-        //enqueue() Asynchronously send the request and notify callback of its response or
-        // if an error occurred talking to the server, creating the request, or processing the response.
-        call.enqueue(new Callback<List<Model>>() {
-            @Override
-            public void onResponse(Call<List<Model>> call, Response<List<Model>> response) {
-                if(response.isSuccessful()) {
-                    List<Model> responseList = response.body();
-                    cryptoModel = new ArrayList<>(responseList);
-                    recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
-                    recycleViewAdapter = new RecycleViewAdapter(cryptoModel);
-                    recyclerView.setAdapter(recycleViewAdapter);
-                }
-            }
+        compositeDisposable = new CompositeDisposable();
+        compositeDisposable.add(cryptoAPI
+                .getData()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(this::handleResponse));
 
-            @Override
-            public void onFailure(Call<List<Model>> call, Throwable t) {
-                t.printStackTrace();
-            }
-        });
+    }
+
+    private void handleResponse(List<Model> modelList) {
+        cryptoModel = new ArrayList<>(modelList);
+        recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+        recycleViewAdapter = new RecycleViewAdapter(cryptoModel);
+        recyclerView.setAdapter(recycleViewAdapter);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        compositeDisposable.clear();
     }
 }
